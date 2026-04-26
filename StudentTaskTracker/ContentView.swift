@@ -3,14 +3,14 @@ import SwiftUI
 struct ContentView: View {
     @StateObject var viewModel = TaskViewModel()
     @State private var newTaskTitle: String = ""
-    @State private var dueDate: Date = Date() // Добавяме променлива за датата
+    @State private var dueDate: Date = Date()
     
     var body: some View {
         NavigationView {
             VStack {
                 // Поле за въвеждане на нова задача и избор на дата
                 HStack {
-                    TextField("Нова задача...", text: $newTaskTitle)
+                    TextField("New task...", text: $newTaskTitle)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     // Календарче за избор на дата
@@ -19,7 +19,6 @@ struct ContentView: View {
                     
                     Button(action: {
                         if !newTaskTitle.isEmpty {
-                            // Вече подаваме избраната дата, а не днешната
                             viewModel.addTask(title: newTaskTitle, date: dueDate)
                             newTaskTitle = ""
                             dueDate = Date() // Нулираме датата след добавяне
@@ -52,6 +51,7 @@ struct ContentView: View {
                                 }
                         }
                     }
+                    .onDelete(perform: viewModel.deleteTasks) // Този ред добавя функцията за изтриване
                 }
             }
             .navigationTitle("My tasks")
