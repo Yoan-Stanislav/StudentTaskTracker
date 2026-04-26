@@ -4,7 +4,7 @@ import Combine
 
 class TaskViewModel: ObservableObject {
     @Published var tasks: [Task] = [] {
-        didSet { saveTasks() }
+        didSet { saveTasks() } // Автоматично запазване при всяка промяна
     }
     
     private let tasksKey = "saved_tasks"
@@ -13,8 +13,8 @@ class TaskViewModel: ObservableObject {
         loadTasks()
     }
     
-    func addTask(title: String, date: Date) {
-        let newTask = Task(title: title, dueDate: date)
+    func addTask(title: String, date: Date, priority: Priority) {
+        let newTask = Task(title: title, dueDate: date, priority: priority)
         tasks.append(newTask)
     }
     
@@ -24,7 +24,15 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    // Функция за триене, която търсиш
+    func updateTask(task: Task, newTitle: String, newDescription: String, newDate: Date, newPriority: Priority) {
+        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[index].title = newTitle
+            tasks[index].taskDescription = newDescription
+            tasks[index].dueDate = newDate
+            tasks[index].priority = newPriority
+        }
+    }
+    
     func deleteTasks(at offsets: IndexSet) {
         tasks.remove(atOffsets: offsets)
     }

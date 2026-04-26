@@ -2,45 +2,53 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject var viewModel = TaskViewModel()
+    @State private var searchText = ""
     @State private var newTaskTitle: String = ""
     @State private var dueDate: Date = Date()
-    @State private var filterSelection = 0 // 0: All, 1: Pending, 2: Completed
+    @State private var selectedPriority: Priority = .medium
+    @State private var filterSelection = 0
 
-    // Логика за филтриране на списъка
     var filteredTasks: [Task] {
-        switch filterSelection {
-        case 1: return viewModel.tasks.filter { !$0.isCompleted }
-        case 2: return viewModel.tasks.filter { $0.isCompleted }
-        default: return viewModel.tasks
+        var result = viewModel.tasks
+        if filterSelection == 1 { result = result.filter { !$0.isCompleted } }
+        else if filterSelection == 2 { result = result.filter { $0.isCompleted } }
+        
+        if !searchText.isEmpty {
+            result = result.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
         }
+        return result
     }
-    
+
     var body: some View {
         NavigationView {
             VStack {
-                // Секция за добавяне
-                VStack {
-                    TextField("New task name...", text: $newTaskTitle)
+                VStack(spacing: 10) {
+                    TextField("Add new task...", text: $newTaskTitle)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     HStack {
-                        DatePicker("Due Date:", selection: $dueDate, displayedComponents: .date)
+                        DatePicker("", selection: $dueDate, displayedComponents: .date)
                             .labelsHidden()
-                        Spacer()
-                        Button("Add Task") {
+                        
+                        Picker("Priority", selection: $selectedPriority) {
+                            ForEach(Priority.allCases, id: \.self) { p in
+                                Text(p.rawValue).tag(p)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        
+                        Button("Add") {
                             if !newTaskTitle.isEmpty {
-                                viewModel.addTask(title: newTaskTitle, date: dueDate)
+                                viewModel.addTask(title: newTaskTitle, date: dueDate, priority: selectedPriority)
                                 newTaskTitle = ""
-                                dueDate = Date()
                             }
                         }
                         .buttonStyle(.borderedProminent)
                     }
                 }
                 .padding()
-                
-                // Филтър (Picker) - показва професионално ниво на работа с UI
-                Picker("Filter", selection: $filterSelection) {
+
+                Picker("", selection: $filterSelection) {
                     Text("All").tag(0)
                     Text("Pending").tag(1)
                     Text("Done").tag(2)
@@ -48,35 +56,40 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
 
-                // Списък
                 List {
                     ForEach(filteredTasks) { task in
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(task.title)
-                                    .strikethrough(task.isCompleted)
-                                    .fontWeight(.medium)
+                        NavigationLink(destination: EditTaskView(viewModel: viewModel, task: task)) {
+                            HStack {
+                                Circle()
+                                    .fill(task.priority.color)
+                                    .frame(width: 10, height: 10)
                                 
-                                Text(task.dueDate, style: .date)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(task.isCompleted ? .green : .gray)
-                                .onTapGesture {
-                                    viewModel.toggleCompletion(task: task)
+                                VStack(alignment: .leading) {
+                                    Text(task.title)
+                                        .strikethrough(task.isCompleted)
+                                    Text(task.dueDate, style: .date)
+                                        .font(.caption).foregroundColor(.secondary)
                                 }
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    viewModel.toggleCompletion(task: task)
+                                }) {
+                                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                                        .foregroundColor(task.isCompleted ? .green : .gray)
+                                        .imageScale(.large)
+                                }
+                                .buttonStyle(.borderless)
+                            }
                         }
                     }
-                    .onDelete(perform: viewModel.deleteTasks) // Активира триенето чрез плъзгане
+                    .onDelete(perform: viewModel.deleteTasks)
                 }
             }
             .navigationTitle("My Tasks")
-            .toolbar {
-                EditButton() // Добавя бутон "Edit", който показва опциите за триене!
-            }
+            .searchable(text: $searchText, prompt: "Search...")
+            .toolbar { EditButton() }
         }
     }
 }
-
