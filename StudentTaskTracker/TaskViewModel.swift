@@ -4,17 +4,13 @@ import Combine
 
 class TaskViewModel: ObservableObject {
     @Published var tasks: [Task] = [] {
-        // Всеки път, когато масивът се промени, автоматично запазваме данните
-        didSet {
-            saveTasks()
-        }
+        didSet { saveTasks() }
     }
     
-    // Ключът, под който ще пазим данните в телефона
     private let tasksKey = "saved_tasks"
     
     init() {
-        loadTasks() // Зареждаме задачите веднага щом приложението стартира
+        loadTasks()
     }
     
     func addTask(title: String, date: Date) {
@@ -28,19 +24,17 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    // Функция за изтриване на задачи
+    // Функция за триене, която търсиш
     func deleteTasks(at offsets: IndexSet) {
         tasks.remove(atOffsets: offsets)
     }
     
-    // Запазване в паметта (кодиране в JSON)
     private func saveTasks() {
         if let encodedData = try? JSONEncoder().encode(tasks) {
             UserDefaults.standard.set(encodedData, forKey: tasksKey)
         }
     }
     
-    // Зареждане от паметта (декодиране от JSON)
     private func loadTasks() {
         if let savedData = UserDefaults.standard.data(forKey: tasksKey),
            let decodedTasks = try? JSONDecoder().decode([Task].self, from: savedData) {
